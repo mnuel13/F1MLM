@@ -7,6 +7,8 @@ from datetime import datetime
 import time
 from bs4 import BeautifulSoup
 
+timeD = 1
+
 
 pd.set_option('display.max_columns', None)
 pd.set_option('display.max_rows', None)
@@ -19,7 +21,7 @@ verify_ssl = False
 startY, endY = 2024, 2025
 # qualy started in 1983
 years_to_retrieve = [y for y in range(startY, endY)]
-until_round = 15
+until_round = 16
 database_filename = 'races.db'
 
 ################################################################################### RACES
@@ -44,15 +46,15 @@ while not_connect:
         r = requests.get(url.format(years_to_retrieve[-1], verify=verify_ssl))
         json = r.json()
         dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        print(f'{dt_string} - Api Available! Collecting Races Table Data!')
         print("")
+        print(f'{dt_string} - Api Available! Collecting Races Table Data!')
         not_connect = False
 
     except:
         dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        print(f'{dt_string} - Api not Available at the moment, trying again...')
-        time.sleep(60)
-        print("")
+        print(f'{dt_string} - Races Table Api not Available at the moment, trying again...')
+        time.sleep(timeD)
+
 
 
 
@@ -126,6 +128,11 @@ new_race_records.to_sql('a_races_table', connection, if_exists='append', index=F
 # Close the database connection
 connection.close()
 
+print('Races Table Updated!')
+print("")
+print("##############################################################################")
+print("")
+
 ################################################################################### RESULTS
 
 rounds = []
@@ -133,6 +140,8 @@ rounds = []
 
 for year in np.array(races.season.unique()):
     rounds.append([year, list(races[races.season == year]['round'])])
+
+# query API
 
 results = {'season': [],
            'round': [],
@@ -148,102 +157,102 @@ results = {'season': [],
            'podium': [],
            'No': []}
 
-# query API
-
-not_connect = True
-while not_connect:
-    try:
-        url = 'http://ergast.com/api/f1/{}/{}/results.json'
-        r = requests.get(url.format(startY, until_round, verify=verify_ssl))
-        json = r.json()
-        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        print(f'{dt_string} - Api Available! Collecting Result Table Data!')
-        print("")
-        not_connect = False
-
-    except:
-        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        print(f'{dt_string} - Api not Available at the moment, trying again...')
-        time.sleep(60)
-        print("")
-
-
 for n in list(range(len(rounds))):
+    print(f"Working on results from Year {rounds[n][0]} with seasons {rounds[n][1]} \n")
     for i in rounds[n][1]:
-        url = 'http://ergast.com/api/f1/{}/{}/results.json'
-        print(rounds[n][0], i)
-        r = requests.get(url.format(rounds[n][0], i, verify=verify_ssl))
-        json = r.json()
+        not_connect = True
+        print(f'Working on: [{rounds[n][0], i}]')
+        while not_connect:
+            try:
+                url = 'http://ergast.com/api/f1/{}/{}/results.json'
+                r = requests.get(url.format(rounds[n][0], i, verify=verify_ssl))
+                json = r.json()
+                dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                print(f'{dt_string} - Api Available! Collecting Result Table Data! [{rounds[n][0], i}]')
 
-        try:
-            for item in json['MRData']['RaceTable']['Races'][0]['Results']:
+                #Add Data
                 try:
-                    results['season'].append(int(json['MRData']['RaceTable']['Races'][0]['season']))
-                except:
-                    results['season'].append(None)
+                    for item in json['MRData']['RaceTable']['Races'][0]['Results']:
+                        try:
+                            results['season'].append(int(json['MRData']['RaceTable']['Races'][0]['season']))
+                        except:
+                            results['season'].append(None)
 
-                try:
-                    results['round'].append(int(json['MRData']['RaceTable']['Races'][0]['round']))
-                except:
-                    results['round'].append(None)
+                        try:
+                            results['round'].append(int(json['MRData']['RaceTable']['Races'][0]['round']))
+                        except:
+                            results['round'].append(None)
 
-                try:
-                    results['circuit_id'].append(json['MRData']['RaceTable']['Races'][0]['Circuit']['circuitId'])
-                except:
-                    results['circuit_id'].append(None)
+                        try:
+                            results['circuit_id'].append(json['MRData']['RaceTable']['Races'][0]['Circuit']['circuitId'])
+                        except:
+                            results['circuit_id'].append(None)
 
-                try:
-                    results['driver'].append(item['Driver']['driverId'])
-                except:
-                    results['driver'].append(None)
+                        try:
+                            results['driver'].append(item['Driver']['driverId'])
+                        except:
+                            results['driver'].append(None)
 
-                try:
-                    results['date_of_birth'].append(item['Driver']['dateOfBirth'])
-                except:
-                    results['date_of_birth'].append(None)
+                        try:
+                            results['date_of_birth'].append(item['Driver']['dateOfBirth'])
+                        except:
+                            results['date_of_birth'].append(None)
 
-                try:
-                    results['nationality'].append(item['Driver']['nationality'])
-                except:
-                    results['nationality'].append(None)
+                        try:
+                            results['nationality'].append(item['Driver']['nationality'])
+                        except:
+                            results['nationality'].append(None)
 
-                try:
-                    results['constructor'].append(item['Constructor']['constructorId'])
-                except:
-                    results['constructor'].append(None)
+                        try:
+                            results['constructor'].append(item['Constructor']['constructorId'])
+                        except:
+                            results['constructor'].append(None)
 
-                try:
-                    results['grid'].append(int(item['grid']))
-                except:
-                    results['grid'].append(None)
+                        try:
+                            results['grid'].append(int(item['grid']))
+                        except:
+                            results['grid'].append(None)
 
-                try:
-                    results['time'].append(int(item['Time']['millis']))
-                except:
-                    results['time'].append(None)
+                        try:
+                            results['time'].append(int(item['Time']['millis']))
+                        except:
+                            results['time'].append(None)
 
-                try:
-                    results['status'].append(item['status'])
-                except:
-                    results['status'].append(None)
+                        try:
+                            results['status'].append(item['status'])
+                        except:
+                            results['status'].append(None)
 
-                try:
-                    results['points'].append(float(item['points']))
-                except:
-                    results['points'].append(None)
+                        try:
+                            results['points'].append(float(item['points']))
+                        except:
+                            results['points'].append(None)
 
-                try:
-                    results['podium'].append(int(item['position']))
-                except:
-                    results['podium'].append(None)
+                        try:
+                            results['podium'].append(int(item['position']))
+                        except:
+                            results['podium'].append(None)
 
-                try:
-                    results['No'].append(int(item['number']))
-                except:
-                    results['No'].append(None)
+                        try:
+                            results['No'].append(int(item['number']))
+                        except:
+                            results['No'].append(None)
 
-        except IndexError:
-            pass
+                    print('Data collected and saved')
+                    print("")
+                    not_connect = False
+
+                except IndexError:
+                    print('Index Error escaped')
+                    print("")
+                    not_connect = False
+                    pass
+
+            except:
+                dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+                print(f'{dt_string} - [{rounds[n][0], i}] Result Table Api not Available at the moment, trying again...')
+                time.sleep(timeD)
+
 
 results = pd.DataFrame(results)
 
@@ -266,6 +275,11 @@ new_results_records.to_sql('b_results_table', connection, if_exists='append', in
 # Close the database connection
 connection.close()
 
+print('Results Table Updated!')
+print("")
+print("##############################################################################")
+print("")
+
 ################################################################################### DRVER STANDING
 
 driver_standings = {'season': [],
@@ -282,46 +296,58 @@ driver_standings = {'season': [],
 for n in tqdm(list(range(len(rounds))), desc=f'Driver Standing Year'):
     inner = tqdm(total=len(rounds[n][1]), leave=False, desc=f'Season', ncols=90, colour='Green')
     for i in rounds[n][1]:
-        inner.update()
-        url = 'https://ergast.com/api/f1/{}/{}/driverStandings.json'
-        r = requests.get(url.format(rounds[n][0], i, verify=verify_ssl))
-        json = r.json()
-        try:
-            for item in json['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']:
+        not_connect = True
+        while not_connect:
+            try:
+                inner.update()
+                url = 'https://ergast.com/api/f1/{}/{}/driverStandings.json'
+                r = requests.get(url.format(rounds[n][0], i, verify=verify_ssl))
+                json = r.json()
                 try:
-                    driver_standings['season'].append(
-                        int(json['MRData']['StandingsTable']['StandingsLists'][0]['season']))
-                except:
-                    driver_standings['season'].append(None)
+                    for item in json['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']:
+                        try:
+                            driver_standings['season'].append(
+                                int(json['MRData']['StandingsTable']['StandingsLists'][0]['season']))
+                        except:
+                            driver_standings['season'].append(None)
 
-                try:
-                    driver_standings['round'].append(
-                        int(json['MRData']['StandingsTable']['StandingsLists'][0]['round']))
-                except:
-                    driver_standings['round'].append(None)
+                        try:
+                            driver_standings['round'].append(
+                                int(json['MRData']['StandingsTable']['StandingsLists'][0]['round']))
+                        except:
+                            driver_standings['round'].append(None)
 
-                try:
-                    driver_standings['driver'].append(item['Driver']['driverId'])
-                except:
-                    driver_standings['driver'].append(None)
+                        try:
+                            driver_standings['driver'].append(item['Driver']['driverId'])
+                        except:
+                            driver_standings['driver'].append(None)
 
-                try:
-                    driver_standings['driver_points'].append(float(item['points']))
-                except:
-                    driver_standings['driver_points'].append(None)
+                        try:
+                            driver_standings['driver_points'].append(float(item['points']))
+                        except:
+                            driver_standings['driver_points'].append(None)
 
-                try:
-                    driver_standings['driver_wins'].append(int(item['wins']))
-                except:
-                    driver_standings['driver_wins'].append(None)
+                        try:
+                            driver_standings['driver_wins'].append(int(item['wins']))
+                        except:
+                            driver_standings['driver_wins'].append(None)
 
-                try:
-                    driver_standings['driver_standings_pos'].append(int(item['position']))
-                except:
-                    driver_standings['driver_standings_pos'].append(None)
-        except IndexError:
-            pass
-        inner.close()
+                        try:
+                            driver_standings['driver_standings_pos'].append(int(item['position']))
+                        except:
+                            driver_standings['driver_standings_pos'].append(None)
+
+                    not_connect = False
+
+                except IndexError:
+                    not_connect = False
+                    pass
+
+                inner.close()
+
+            except:
+                time.sleep(timeD)
+                pass
 
 driver_standings = pd.DataFrame(driver_standings)
 
@@ -362,6 +388,11 @@ new_driver_standings_records.to_sql('c_driver_standings_table', connection, if_e
 # Close the database connection
 connection.close()
 
+print('Driver Standing Table Updated!')
+print("")
+print("##############################################################################")
+print("")
+
 #################################################################################### Constructor Standing
 
 # start from year 1958 and do rounds[8:] if starting from 1950
@@ -382,46 +413,57 @@ constructor_standings = {'season': [],
 for n in tqdm(list(range(len(constructor_rounds))), desc=f'Constructors Year'):
     inner = tqdm(total=len(constructor_rounds[n][1]), leave=False, desc=f'Season', ncols=90, colour='Green')
     for i in constructor_rounds[n][1]:
-        inner.update()
-        url = 'https://ergast.com/api/f1/{}/{}/constructorStandings.json'
-        r = requests.get(url.format(constructor_rounds[n][0], i, verify=verify_ssl))
-        json = r.json()
-        try:
-            for item in json['MRData']['StandingsTable']['StandingsLists'][0]['ConstructorStandings']:
+        not_connect = True
+        while not_connect:
+            try:
+                inner.update()
+                url = 'https://ergast.com/api/f1/{}/{}/constructorStandings.json'
+                r = requests.get(url.format(constructor_rounds[n][0], i, verify=verify_ssl))
+                json = r.json()
                 try:
-                    constructor_standings['season'].append(
-                        int(json['MRData']['StandingsTable']['StandingsLists'][0]['season']))
-                except:
-                    constructor_standings['season'].append(None)
+                    for item in json['MRData']['StandingsTable']['StandingsLists'][0]['ConstructorStandings']:
+                        try:
+                            constructor_standings['season'].append(
+                                int(json['MRData']['StandingsTable']['StandingsLists'][0]['season']))
+                        except:
+                            constructor_standings['season'].append(None)
 
-                try:
-                    constructor_standings['round'].append(
-                        int(json['MRData']['StandingsTable']['StandingsLists'][0]['round']))
-                except:
-                    constructor_standings['round'].append(None)
+                        try:
+                            constructor_standings['round'].append(
+                                int(json['MRData']['StandingsTable']['StandingsLists'][0]['round']))
+                        except:
+                            constructor_standings['round'].append(None)
 
-                try:
-                    constructor_standings['constructor'].append(item['Constructor']['constructorId'])
-                except:
-                    constructor_standings['constructor'].append(None)
+                        try:
+                            constructor_standings['constructor'].append(item['Constructor']['constructorId'])
+                        except:
+                            constructor_standings['constructor'].append(None)
 
-                try:
-                    constructor_standings['constructor_points'].append(int(item['points']))
-                except:
-                    constructor_standings['constructor_points'].append(None)
+                        try:
+                            constructor_standings['constructor_points'].append(int(item['points']))
+                        except:
+                            constructor_standings['constructor_points'].append(None)
 
-                try:
-                    constructor_standings['constructor_wins'].append(int(item['wins']))
-                except:
-                    constructor_standings['constructor_wins'].append(None)
+                        try:
+                            constructor_standings['constructor_wins'].append(int(item['wins']))
+                        except:
+                            constructor_standings['constructor_wins'].append(None)
 
-                try:
-                    constructor_standings['constructor_standings_pos'].append(int(item['position']))
-                except:
-                    constructor_standings['constructor_standings_pos'].append(None)
-        except IndexError:
-            pass
-        inner.close()
+                        try:
+                            constructor_standings['constructor_standings_pos'].append(int(item['position']))
+                        except:
+                            constructor_standings['constructor_standings_pos'].append(None)
+
+                    not_connect = False
+
+                except IndexError:
+                    not_connect = False
+                    pass
+                inner.close()
+
+            except:
+                time.sleep(timeD)
+                pass
 
 constructor_standings = pd.DataFrame(constructor_standings)
 
@@ -450,6 +492,11 @@ new_constructor_standings_records.to_sql('d_constructor_standings_table', connec
 
 # Close the database connection
 connection.close()
+
+print('Constructor Standing Table Updated!')
+print("")
+print("##############################################################################")
+print("")
 
 #################################################################################### Qualifying
 
