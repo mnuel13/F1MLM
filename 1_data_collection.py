@@ -36,6 +36,27 @@ races = {'season': [],
 
 # query API
 
+
+not_connect = True
+while not_connect:
+    try:
+        url = 'https://ergast.com/api/f1/{}.json'
+        r = requests.get(url.format(years_to_retrieve[-1], verify=verify_ssl))
+        json = r.json()
+        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        print(f'{dt_string} - Api Available! Collecting Races Table Data!')
+        print("")
+        not_connect = False
+
+    except:
+        dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
+        print(f'{dt_string} - Api not Available at the moment, trying again...')
+        time.sleep(60)
+        print("")
+
+
+
+
 for year in years_to_retrieve:
 
     url = 'https://ergast.com/api/f1/{}.json'
@@ -132,11 +153,11 @@ results = {'season': [],
 not_connect = True
 while not_connect:
     try:
-        url = 'http://ergast.com/api/f1/2024/1/results.json'
-        r = requests.get(url.format('2024', '1', verify=verify_ssl))
+        url = 'http://ergast.com/api/f1/{}/{}/results.json'
+        r = requests.get(url.format(startY, until_round, verify=verify_ssl))
         json = r.json()
         dt_string = datetime.now().strftime("%d/%m/%Y %H:%M:%S")
-        print(f'{dt_string} - Api Available! Collecting Data!')
+        print(f'{dt_string} - Api Available! Collecting Result Table Data!')
         print("")
         not_connect = False
 
@@ -150,6 +171,7 @@ while not_connect:
 for n in list(range(len(rounds))):
     for i in rounds[n][1]:
         url = 'http://ergast.com/api/f1/{}/{}/results.json'
+        print(rounds[n][0], i)
         r = requests.get(url.format(rounds[n][0], i, verify=verify_ssl))
         json = r.json()
 
@@ -465,6 +487,7 @@ for year in tqdm(list(range(startY, endY)), desc=f'Qualifying Year'):
         if 'races/' in link:
             year_links.append(link)
     # for each circuit, switch to the starting grid page and read table
+    #year_links.append('races/1243/netherlands/qualifying')
 
     year_df = pd.DataFrame()
     new_url = 'https://www.formula1.com/en/results/{}/{}'

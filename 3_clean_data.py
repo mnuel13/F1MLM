@@ -3,7 +3,7 @@ import pandas as pd
 from dateutil.relativedelta import *
 
 
-database_name = 'racesD.db'
+database_name = 'races.db'
 connection = sqlite3.connect(database_name)
 
 table_names = ['a_races_table', 'b_results_table', 'c_driver_standings_table',
@@ -92,12 +92,12 @@ final_df['qualifying_time_diff'] = final_df.groupby(['season', 'round']).qualify
 final_df['qualifying_time'] = final_df.groupby(['season',
                                                 'round']).qualifying_time_diff.cumsum().fillna(0)
 final_df.drop('qualifying_time_diff', axis=1, inplace=True)
-final_df['drivers'] = final_df.driver
+# final_df['drivers'] = final_df.driver
 
 # get dummies
 
 
-df_dum = pd.get_dummies(final_df, columns=['circuit_id', 'nationality', 'constructor', 'drivers'])
+df_dum = pd.get_dummies(final_df, columns=['circuit_id', 'nationality', 'constructor'])
 
 for col in df_dum.columns:
     if 'nationality' in col and df_dum[col].sum() < 140:
